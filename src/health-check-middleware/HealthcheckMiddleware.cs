@@ -23,10 +23,10 @@ namespace HealthCheck
 
         public async Task Invoke(HttpContext context)
         {
-            if (context.Request.Path.StartsWithSegments("/healthcheck"))
+            if (context.Request.Path.StartsWithSegments(_options.Path))
             {
                 _logger.LogInformation("Healthcheck requested: " + context.Request.Path);
-                await context.Response.WriteAsync(_options.GreetingText);
+                await context.Response.WriteAsync(_options.Message);
             }
             else
             {
@@ -45,6 +45,13 @@ namespace HealthCheck
 
     public class HealthCheckOptions
     {
-        public string GreetingText { get; set; }
+        public HealthCheckOptions()
+        {
+            Path = "healthcheck";
+            Message = "i am alive!";    
+        }
+
+        public string Path { get; set; }
+        public string Message { get; set; }
     }
 }
