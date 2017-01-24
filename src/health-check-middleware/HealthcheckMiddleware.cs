@@ -47,7 +47,7 @@ namespace HealthCheck
     {
         public HealthCheckOptions()
         {
-            Path = "healthcheck";
+            Path = "/healthcheck";
             Message = "i am alive!";    
         }
 

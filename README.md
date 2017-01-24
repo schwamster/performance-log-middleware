@@ -33,9 +33,14 @@ Edit your Startup.cs ->
 
 Thats it now you can start your Api and navigate to http://localhost:<randomport>/healthcheck
 
-The result should look like this
+You should now see the message "Its alive" displayed in the browser.
 
+### Options
 
+HealthCheckOptions
+
+* Message: Message to display on when the healthcheck enpoint is called. Default: "it is alive"
+* Path: Path of the Endpoint (needs to start with "/"). Default: /healthcheck
 
 
 ## Build and Publish

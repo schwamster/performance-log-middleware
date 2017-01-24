@@ -17,4 +17,4 @@ deployment:
     branch: master
     commands:
       - docker run --rm -v ~/health-check-middleware/package:/data/package schwamster/nuget-docker push /data/package/*.nupkg $Nuget_Api_Key -Source nuget.org
-      - docker run --rm -v ~/health-check-middleware/symbols:/data/package schwamster/nuget-docker push /data/package/*.nupkg $Nuget_Api_Key -Source nuget.smbrc.net
+      #- docker run --rm -v ~/health-check-middleware/symbols:/data/package schwamster/nuget-docker push /data/package/*.nupkg $Nuget_Api_Key -Source nuget.smbrc.net
