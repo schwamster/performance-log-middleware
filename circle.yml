@@ -16,4 +16,4 @@ deployment:
   hub:
     branch: master
     commands:
-      - docker run --rm -v ${pwd}/package:/data/package schwamster/nuget-docker push /data/package/*.nupkg $Nuget_Api_Key -Source nuget.org
+      - docker run --rm -v ./package:/data/package schwamster/nuget-docker push /data/package/*.nupkg $Nuget_Api_Key -Source nuget.org
