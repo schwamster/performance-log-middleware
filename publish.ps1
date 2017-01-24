@@ -1,0 +1,1 @@
+docker run --rm -v ${PWD}/package:/data/package schwamster/nuget-docker push /data/package/*.nupkg ${Env:Nuget_Api_Key} -Source nuget.org

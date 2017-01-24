@@ -1,0 +1,6 @@
+app:
+  image: microsoft/dotnet:1.1.0-sdk-projectjson
+  volumes:
+    - .:/sln
+  working_dir: /sln
+  entrypoint: ["sh", "./build-container.sh"]
