@@ -3,4 +3,6 @@ app:
   volumes:
     - .:/sln
   working_dir: /sln
+  environment: 
+    - "BuildNumber=${CIRCLE_BUILD_NUM}"
   entrypoint: ["sh", "./build-container.sh"]
