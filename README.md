@@ -5,6 +5,39 @@ You will be able to supply custom metrics to give the caller more detailed infor
 
 ## Getting started
 
+### Install the package
+Install the nuget package from [nuget](https://www.nuget.org/packages/health-check-middleware/)
+
+Either add it with the PM-Console:
+        
+        Install-Package health-check-middleware
+
+Or add it to project.json
+        "dependencies": {
+            ...
+            "health-check-middleware": "XXX"
+        }
+
+### Set your api up
+
+Edit your Startup.cs -> 
+
+        Configure(){
+            ...
+
+            app.UseHealthcheckEndpoint(new HealthCheckOptions() { Message = "Its alive!" });
+            
+            ...
+        }
+
+
+Thats it now you can start your Api and navigate to http://localhost:<randomport>/healthcheck
+
+The result should look like this
+
+
+
+
 ## Build and Publish
 The package is build in docker so you will need to install docker to build and publish the package.
 (Of course you could just build it on the machine you are running on and publish it from there. 

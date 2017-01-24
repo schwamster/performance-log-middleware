@@ -1,5 +1,5 @@
 {
-  "version": "1.1.0-beta-*",
+  "version": "1.1.0-rc",
   "packOptions": {
     "licenseUrl": "https://github.com/schwamster/health-check-middleware/blob/master/LICENSE.md",
     "projectUrl": "https://github.com/schwamster/health-check-middleware"
