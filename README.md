@@ -1,4 +1,4 @@
-# health-check-middleware
+# performance-log-middleware
 
 This is simple piece of asp.net core middleware that adds a performance times the duration to each incoming request and logs
 it to the configured Logger (ILoggerFactory)
