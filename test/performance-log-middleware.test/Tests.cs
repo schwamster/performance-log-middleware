@@ -1,5 +1,5 @@
 ﻿using System;
-using HealthCheck;
+using PerformanceLog;
 using Microsoft.Extensions.Logging;
 using Xunit;
 
@@ -11,8 +11,8 @@ namespace Tests
         public void Test1() 
         {
             var loggerFactory = new Moq.Mock<ILoggerFactory>();
-            var healthCheck = new HealthCheckMiddleware(null, loggerFactory.Object, new HealthCheckOptions());
-            Assert.NotNull(healthCheck);
+            var performanceLog = new PerformanceLogMiddleware(null, loggerFactory.Object, new PerformanceLogOptions());
+            Assert.NotNull(performanceLog);
         }
     }
 }

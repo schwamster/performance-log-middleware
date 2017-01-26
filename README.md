@@ -1,21 +1,21 @@
 # health-check-middleware
 
-This is simple piece of asp.net core middleware that a monitoring service can call to determine if the app is alive.
-You will be able to supply custom metrics to give the caller more detailed information about the service/app.
+This is simple piece of asp.net core middleware that adds a performance times the duration to each incoming request and logs
+it to the configured Logger (ILoggerFactory)
 
 ## Getting started
 
 ### Install the package
-Install the nuget package from [nuget](https://www.nuget.org/packages/health-check-middleware/)
+Install the nuget package from [nuget](https://www.nuget.org/packages/performance-log-middleware/)
 
 Either add it with the PM-Console:
         
-        Install-Package health-check-middleware
+        Install-Package performance-log-middleware
 
 Or add it to project.json
         "dependencies": {
             ...
-            "health-check-middleware": "XXX"
+            "performance-log-middleware": "XXX"
         }
 
 ### Set your api up
@@ -25,28 +25,25 @@ Edit your Startup.cs ->
         Configure(){
             ...
 
-            app.UseHealthcheckEndpoint(new HealthCheckOptions() { Message = "Its alive!" });
+            app.UsePerformanceLog(new PerformanceLogOptions());
             
             ...
         }
 
 
-Thats it now you can start your Api and navigate to http://localhost:<randomport>/healthcheck
-
-You should now see the message "Its alive" displayed in the browser.
+Thats it now you application logs all request durations to your configured logger.
 
 ### Options
 
-HealthCheckOptions
+PerformanceLogOptions
 
-* Message: Message to display on when the healthcheck enpoint is called. Default: "it is alive"
-* Path: Path of the Endpoint (needs to start with "/"). Default: /healthcheck
+none yet
 
 
 ## Build and Publish
 The package is build in docker so you will need to install docker to build and publish the package.
 (Of course you could just build it on the machine you are running on and publish it from there. 
-I prefer to build and publish from docker images to have a reliable environment, plus make it easier 
+I prefer to build and publish from docker images to have a reliable environment, plus makes it easier 
 to build this on circleci).
 
 ### build
