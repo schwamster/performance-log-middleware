@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Builder;
+using System.Diagnostics;
 
 namespace PerformanceLog
 {
@@ -23,9 +24,19 @@ namespace PerformanceLog
 
         public async Task Invoke(HttpContext context)
         {
-                 _logger.LogInformation($"Performance Begin: {DateTime.UtcNow} {context.Request.Path}");
-                await _next(context);
-                _logger.LogInformation($"Performance End: {DateTime.UtcNow} {context.Request.Path}");
+            var correlationId = context.TraceIdentifier; //Guid.NewGuid().ToString();
+            
+            
+            var stopwatch = Stopwatch.StartNew();
+            await _next(context);
+            var logEntry = new LogItem
+            {
+                Duration = stopwatch.ElapsedMilliseconds,
+                Operation = context.Request.Path,
+                CorrelationId = correlationId
+            };
+
+            _logger.Log(_options.LogLevel, new EventId(), logEntry, null, _options.Formatter);
         }
     }
 
@@ -37,11 +48,29 @@ namespace PerformanceLog
         }
     }
 
+    public class LogItem
+    {
+        public long Duration { get; set; }
+        public string Operation { get; set; }
+
+        public string CorrelationId { get; set; }
+
+        public override string ToString()
+        {
+            return $"Operation: {Operation}; Duration: {Duration}; CorrelationId: {CorrelationId}";
+        }
+    }
+
     public class PerformanceLogOptions
     {
+        public LogLevel LogLevel { get; set; }
+
+        public Func<LogItem, Exception, string> Formatter { get; set; }
+
         public PerformanceLogOptions()
         {
-
+            LogLevel = LogLevel.Information;
+            Formatter = (log, exception) => { return $"{log}"; };
         }
     }
 }

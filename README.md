@@ -3,6 +3,9 @@
 This is simple piece of asp.net core middleware that adds a performance times the duration to each incoming request and logs
 it to the configured Logger (ILoggerFactory)
 
+[![CircleCI](https://circleci.com/gh/schwamster/performance-log-middleware.svg?style=shield&circle-token)](https://circleci.com/gh/schwamster/performance-log-middleware)
+![#](https://img.shields.io/nuget/v/performance-log-middleware.svg)
+
 ## Getting started
 
 ### Install the package
@@ -37,7 +40,8 @@ Thats it now you application logs all request durations to your configured logge
 
 PerformanceLogOptions
 
-none yet
+* LogLevel: Log level the performance logger should UsePerformanceLog. Default: Information
+* Formatter: Format of the log (Func<LogItem, Exception, string> Formatter). Default: (log, exception) => { return $"{log}"; }
 
 
 ## Build and Publish
