@@ -18,7 +18,7 @@ namespace PerformanceLog
         public PerformanceLogMiddleware(RequestDelegate next, ILoggerFactory loggerFactory, PerformanceLogOptions options)
         {
             _next = next;
-            _logger = loggerFactory.CreateLogger<PerformanceLogMiddleware>();
+            _logger = loggerFactory.CreateLogger("performance");   
             _options = options;
         }
 
@@ -52,12 +52,15 @@ namespace PerformanceLog
             return app.UseMiddleware<PerformanceLogMiddleware>(options);
         }
 
-        public static IApplicationBuilder UsePerformanceLog(this IApplicationBuilder app, Action<IPerformanceLogOptions> options)
+        public static IApplicationBuilder UsePerformanceLog(this IApplicationBuilder app, Action<IPerformanceLogOptions> optionsAction)
         {
             if (app == null)
                 throw new ArgumentNullException(nameof(app));
-            if (options == null)
-                throw new ArgumentNullException(nameof(options));
+            if (optionsAction == null)
+                throw new ArgumentNullException(nameof(optionsAction));
+            var options = new PerformanceLogOptions();
+
+            optionsAction.Invoke(options);
 
             return app.UseMiddleware<PerformanceLogMiddleware>(options);
         }
@@ -89,7 +92,7 @@ namespace PerformanceLog
         public void Default()
         {
             LogLevel = LogLevel.Information;
-            Formatter = (log, exception) => { return $"{log}"; };
+            Formatter = (log, exception) => { return $"Performance: {log}"; };
         }
 
         public IOptions WithFormatter(Func<LogItem, Exception, string> formatter)
