@@ -120,41 +120,100 @@ namespace Tests
             logger.LogItem.Duration.Should().BeInRange(20, 30);
         }
 
-        //TODO: needs to be fixed. Otherwise logs of failing calls will be ignored
-        //[Fact]
-        //public async void InvokeTest_GivenExceptionInStack_LogsDuration()
-        //{
-        //    //Arrange
-        //    var logger = new TestLogger();
+        [Fact]
+        public async void InvokeTest_GivenCustomFormat_LogsDuration()
+        {
+            //Arrange
+            var logger = new TestLogger();
 
-        //    var builder = new WebHostBuilder()
-        //        .ConfigureServices(app =>
-        //        {
-        //            app.AddSingleton<ILoggerFactory>(GetLoggerFactory(logger).Object);
-        //        }
-        //        )
-        //        .Configure(app =>
-        //        {
-        //            app.UsePerformanceLog(options => options.Default());
-        //            app.UseMiddleware<FakeMiddleware>(TimeSpan.FromMilliseconds(20));
-        //        });
+            var builder = new WebHostBuilder()
+                .ConfigureServices(app =>
+                {
+                    app.AddSingleton<ILoggerFactory>(GetLoggerFactory(logger).Object);
+                }
+                )
+                .Configure(app =>
+                {
+                    app.UsePerformanceLog(options => options.Configure().WithFormatter((logItem, exception)=> { return string.Format("customduration: {0}", logItem.Duration); }));
+                    app.UseMiddleware<FakeMiddleware>(TimeSpan.FromMilliseconds(20));
+                });
 
-        //    var server = new TestServer(builder);
+            var server = new TestServer(builder);
 
-        //    //Act
-        //    var requestMessage = new HttpRequestMessage(new HttpMethod("GET"), "/throw/");
-        //    try
-        //    {
-        //        var responseMessage = await server.CreateClient().SendAsync(requestMessage);
-        //    }
-        //    catch
-        //    {
-        //        //catch the clients exception
-        //    }
+            //Act 
+            var requestMessage = new HttpRequestMessage(new HttpMethod("GET"), "/delay/");
+            var responseMessage = await server.CreateClient().SendAsync(requestMessage);
 
-        //    logger.Logs.Exists(x => x.Item1 == LogLevel.Information && x.Item2.StartsWith("Performance")).Should().BeTrue();
-        //    logger.LogItem.Duration.Should().BeInRange(20, 30);
-        //}
+            //Assert
+            logger.Logs.Exists(x => x.Item1 == LogLevel.Information && x.Item2.StartsWith("customduration: ")).Should().BeTrue();
+            logger.LogItem.Duration.Should().BeInRange(20, 30);
+        }
+
+        [Fact]
+        public async void InvokeTest_GivenCustomLogLevel_LogsDuration()
+        {
+            //Arrange
+            var logger = new TestLogger();
+
+            var builder = new WebHostBuilder()
+                .ConfigureServices(app =>
+                {
+                    app.AddSingleton<ILoggerFactory>(GetLoggerFactory(logger).Object);
+                }
+                )
+                .Configure(app =>
+                {
+                    app.UsePerformanceLog(options => options.Configure().WithLogLevel(LogLevel.Trace));
+                    app.UseMiddleware<FakeMiddleware>(TimeSpan.FromMilliseconds(20));
+                });
+
+            var server = new TestServer(builder);
+
+            //Act 
+            var requestMessage = new HttpRequestMessage(new HttpMethod("GET"), "/delay/");
+            var responseMessage = await server.CreateClient().SendAsync(requestMessage);
+
+            //Assert
+            logger.Logs.Exists(x => x.Item1 == LogLevel.Trace && x.Item2.StartsWith("Performance")).Should().BeTrue();
+            logger.LogItem.Duration.Should().BeInRange(20, 30);
+        }
+
+
+        [Fact]
+        public async void InvokeTest_GivenExceptionInStack_DoesNotLog()
+        {
+            //this is not exactly the behaviour i wanted just want to make it clear with a unit test
+            //the problem with this behaviour is, that no performance logs will exits for calls that fail somewhere down the line
+            //Arrange
+            var logger = new TestLogger();
+
+            var builder = new WebHostBuilder()
+                .ConfigureServices(app =>
+                {
+                    app.AddSingleton<ILoggerFactory>(GetLoggerFactory(logger).Object);
+                }
+                )
+                .Configure(app =>
+                {
+                    app.UsePerformanceLog(options => options.Default());
+                    app.UseMiddleware<FakeMiddleware>(TimeSpan.FromMilliseconds(20));
+                });
+
+            var server = new TestServer(builder);
+
+            //Act
+            var requestMessage = new HttpRequestMessage(new HttpMethod("GET"), "/throw/");
+            try
+            {
+                var responseMessage = await server.CreateClient().SendAsync(requestMessage);
+            }
+            catch
+            {
+                //catch the clients exception
+            }
+            logger.Logs.Exists(x => x.Item1 == LogLevel.Information && x.Item2.StartsWith("Performance")).Should().BeFalse();
+        }
+
 
         [Fact]
         public async void InvokeTest_GivenNoLoggerConfigured_ThrowsNoException()
@@ -167,6 +226,32 @@ namespace Tests
                     app.UseMiddleware<FakeMiddleware>(TimeSpan.FromMilliseconds(20));
                 });
 
+            var server = new TestServer(builder);
+
+            //Act 
+            var requestMessage = new HttpRequestMessage(new HttpMethod("GET"), "/delay/");
+            var responseMessage = await server.CreateClient().SendAsync(requestMessage);
+        }
+
+        [Fact, Trait("Category", "Usage")]
+        public async void InvokeTest_TestWithDefaultLogger()
+        {
+            //Arrange
+            var builder = new WebHostBuilder()
+                .ConfigureServices(app =>
+                {
+                    app.AddLogging();
+                }
+                )
+                .Configure((app) =>
+                {
+                    var loggingService = app.ApplicationServices.GetService<ILoggerFactory>();
+                    loggingService.AddConsole(true);
+                    loggingService.AddDebug();
+                    app.UsePerformanceLog(options => options.Default());
+                    app.UseMiddleware<FakeMiddleware>(TimeSpan.FromMilliseconds(20));
+                });
+            
             var server = new TestServer(builder);
 
             //Act 

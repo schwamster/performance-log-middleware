@@ -12,7 +12,9 @@
     },
     "Moq": "4.6.38-alpha",
     "FluentAssertions": "4.9.1",
-    "Microsoft.AspNetCore.TestHost": "1.1.0" 
+    "Microsoft.AspNetCore.TestHost": "1.1.0",
+    "Microsoft.Extensions.Logging.Console": "1.1.0",
+    "Microsoft.Extensions.Logging.Debug": "1.1.0" 
   },
   "testRunner": "xunit",
   "frameworks": {
