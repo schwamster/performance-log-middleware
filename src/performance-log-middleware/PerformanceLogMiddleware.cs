@@ -18,7 +18,7 @@ namespace PerformanceLog
         public PerformanceLogMiddleware(RequestDelegate next, ILoggerFactory loggerFactory, PerformanceLogOptions options)
         {
             _next = next;
-            _logger = loggerFactory.CreateLogger<PerformanceLogMiddleware>();
+            _logger = loggerFactory.CreateLogger("performance");   
             _options = options;
         }
 
@@ -42,11 +42,78 @@ namespace PerformanceLog
 
     public static class PerformanceLogMiddlewareExtension
     {
-        public static IApplicationBuilder UsePerformanceLog(this IApplicationBuilder builder, PerformanceLogOptions options)
+        public static IApplicationBuilder UsePerformanceLog(this IApplicationBuilder app, PerformanceLogOptions options)
         {
-            return builder.UseMiddleware<PerformanceLogMiddleware>(options);
+            if (app == null)
+                throw new ArgumentNullException(nameof(app));
+            if (options == null)
+                throw new ArgumentNullException(nameof(options));
+
+            return app.UseMiddleware<PerformanceLogMiddleware>(options);
+        }
+
+        public static IApplicationBuilder UsePerformanceLog(this IApplicationBuilder app, Action<IPerformanceLogOptions> optionsAction)
+        {
+            if (app == null)
+                throw new ArgumentNullException(nameof(app));
+            if (optionsAction == null)
+                throw new ArgumentNullException(nameof(optionsAction));
+            var options = new PerformanceLogOptions();
+
+            optionsAction.Invoke(options);
+
+            return app.UseMiddleware<PerformanceLogMiddleware>(options);
         }
     }
+
+    public interface IPerformanceLogOptions
+    {
+        IOptions Configure();
+        void Default();
+    }
+
+    public interface IOptions
+    {
+        IOptions WithLogLevel(LogLevel logLevel);
+        IOptions WithFormatter(Func<LogItem, Exception, string> formatter);
+    }
+
+    public class PerformanceLogOptions : IPerformanceLogOptions, IOptions
+    {
+        public LogLevel LogLevel { get; set; }
+
+        public Func<LogItem, Exception, string> Formatter { get; set; }
+
+        public PerformanceLogOptions()
+        {
+            Default();
+        }
+
+        public void Default()
+        {
+            LogLevel = LogLevel.Information;
+            Formatter = (log, exception) => { return $"Performance: {log}"; };
+        }
+
+        public IOptions WithFormatter(Func<LogItem, Exception, string> formatter)
+        {
+            this.Formatter = formatter;
+            return this;
+        }
+
+        public IOptions Configure()
+        {
+            return this;
+        }
+
+        IOptions IOptions.WithLogLevel(LogLevel logLevel)
+        {
+            this.LogLevel = logLevel;
+            return this;
+        }
+    }
+
+
 
     public class LogItem
     {
@@ -61,16 +128,5 @@ namespace PerformanceLog
         }
     }
 
-    public class PerformanceLogOptions
-    {
-        public LogLevel LogLevel { get; set; }
 
-        public Func<LogItem, Exception, string> Formatter { get; set; }
-
-        public PerformanceLogOptions()
-        {
-            LogLevel = LogLevel.Information;
-            Formatter = (log, exception) => { return $"{log}"; };
-        }
-    }
 }
