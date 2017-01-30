@@ -34,7 +34,7 @@ Edit your Startup.cs ->
         }
 
 
-Thats it now you application logs all request durations to your configured logger.
+Thats it. Now you application logs all request durations to your configured logger.
 
 ### Options
 
@@ -42,6 +42,18 @@ PerformanceLogOptions
 
 * LogLevel: Log level the performance logger should UsePerformanceLog. Default: Information
 * Formatter: Format of the log (Func<LogItem, Exception, string> Formatter). Default: (log, exception) => { return $"{log}"; }
+
+###Contributions
+
+Contributors are very welcome. Missing a feature? Have some hints about what can be done better?
+
+Please follow this guideline if you want to contribute:
+
+* Fork the repository.
+* Create a branch to work in.
+* Make your feature addition or bug fix.
+* Don't forget the unit tests.
+* Send a pull request.
 
 
 ## Build and Publish

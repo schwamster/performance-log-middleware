@@ -258,5 +258,31 @@ namespace Tests
             var requestMessage = new HttpRequestMessage(new HttpMethod("GET"), "/delay/");
             var responseMessage = await server.CreateClient().SendAsync(requestMessage);
         }
+
+        [Fact, Trait("Category", "Usage")]
+        public async void InvokeTest_TestWithSerilog()
+        {
+            //Arrange
+            var builder = new WebHostBuilder()
+                .ConfigureServices(app =>
+                {
+                    app.AddLogging();
+                }
+                )
+                .Configure((app) =>
+                {
+                    var loggingService = app.ApplicationServices.GetService<ILoggerFactory>();
+                    loggingService.AddConsole(true);
+                    loggingService.AddDebug();
+                    app.UsePerformanceLog(options => options.Default());
+                    app.UseMiddleware<FakeMiddleware>(TimeSpan.FromMilliseconds(20));
+                });
+
+            var server = new TestServer(builder);
+
+            //Act 
+            var requestMessage = new HttpRequestMessage(new HttpMethod("GET"), "/delay/");
+            var responseMessage = await server.CreateClient().SendAsync(requestMessage);
+        }
     }
 }
