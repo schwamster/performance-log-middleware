@@ -124,7 +124,7 @@ namespace Tests
             var responseMessage = await server.CreateClient().SendAsync(requestMessage);
 
             //Assert
-            logger.Logs.Exists(x => x.Item1 == LogLevel.Information && x.Item2.StartsWith("Performance")).Should().BeTrue();
+            logger.Logs.Exists(x => x.Item1 == LogLevel.Information && x.Item2.StartsWith("request")).Should().BeTrue();
             logger.LogItem.Duration.Should().BeInRange(20, 30);
         }
 
@@ -142,7 +142,7 @@ namespace Tests
                 )
                 .Configure(app =>
                 {
-                    app.UsePerformanceLog(options => options.Configure().WithFormatter((logItem, exception) => { return string.Format("customduration: {0}", logItem.Duration); }));
+                    app.UsePerformanceLog(options => options.Configure().WithFormat("customduration: {1}"));
                     app.UseMiddleware<FakeMiddleware>(TimeSpan.FromMilliseconds(20));
                 });
 
@@ -278,7 +278,6 @@ namespace Tests
         [Fact, Trait("Category", "Usage")]
         public async void InvokeTest_TestWithSerilog()
         {
-
             List<LogEvent> logs = new List<LogEvent>();
             var sink = new Mock<ILogEventSink>();
             sink.Setup(s => s.Emit(It.IsAny<LogEvent>())).Callback((LogEvent l) => { logs.Add(l); });
@@ -290,7 +289,7 @@ namespace Tests
             .WriteTo.Logger(lc => lc
                 .Filter.ByIncludingOnly(Matching.FromSource("performance"))
                 //.WriteTo.RollingFile(new RenderedCompactJsonFormatter(), Path.Combine("c:\\logs\\", "log-perf-{Date}.txt")).WriteTo.LiterateConsole())
-                .WriteTo.RollingFile(new CustomFormatter(), Path.Combine("c:\\logs\\", "log-perf-{Date}.txt")).WriteTo.LiterateConsole())
+                .WriteTo.RollingFile(new CustomJsonFormatter("testapp"), Path.Combine("c:\\logs\\", "log-perf-{Date}.txt")).WriteTo.LiterateConsole())
                 .WriteTo.Sink(sink.Object)
             .CreateLogger();
 
@@ -305,7 +304,7 @@ namespace Tests
                 {
                     var loggerFactory = app.ApplicationServices.GetService<ILoggerFactory>();
                     loggerFactory.AddSerilog();
-                    app.UsePerformanceLog(options => options.Default());
+                    app.UsePerformanceLog(options => options.Configure().WithFormat("request to {operation} took {duration}ms"));
                     app.UseMiddleware<FakeMiddleware>(TimeSpan.FromMilliseconds(20));
                 });
 

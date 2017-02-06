@@ -40,8 +40,11 @@ Thats it. Now you application logs all request durations to your configured logg
 
 PerformanceLogOptions
 
-* LogLevel: Log level the performance logger should UsePerformanceLog. Default: Information
-* Formatter: Format of the log (Func<LogItem, Exception, string> Formatter). Default: (log, exception) => { return $"{log}"; }
+* LogLevel (optional): Log level the performance logger should UsePerformanceLog. Default: Information
+* Format (optional): Default: "request to {0} took {1}ms"
+        params: 
+        0: operation
+        1: duration in ms
 
 ###Contributions
 

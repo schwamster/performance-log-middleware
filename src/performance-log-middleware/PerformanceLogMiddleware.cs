@@ -18,15 +18,15 @@ namespace PerformanceLog
         public PerformanceLogMiddleware(RequestDelegate next, ILoggerFactory loggerFactory, PerformanceLogOptions options)
         {
             _next = next;
-            _logger = loggerFactory.CreateLogger("performance");   
+            _logger = loggerFactory.CreateLogger("performance");
             _options = options;
         }
 
         public async Task Invoke(HttpContext context)
         {
             var correlationId = context.TraceIdentifier; //Guid.NewGuid().ToString();
-            
-            
+
+
             var stopwatch = Stopwatch.StartNew();
             await _next(context);
             var logEntry = new LogItem
@@ -35,10 +35,33 @@ namespace PerformanceLog
                 Operation = context.Request.Path,
                 CorrelationId = correlationId
             };
-            _logger.LogInformation("here is a log");
-            
-            _logger.LogInformation("request to {operation} took {duration}ms", logEntry.Operation, logEntry.Duration);
-            _logger.Log(_options.LogLevel, new EventId(), logEntry, null, _options.Formatter);
+
+            switch (_options.LogLevel)
+            {
+                case LogLevel.Information:
+                    _logger.LogInformation(_options.Format, logEntry.Operation, logEntry.Duration);
+                    break;
+                case LogLevel.Debug:
+                    _logger.LogDebug(_options.Format, logEntry.Operation, logEntry.Duration);
+                    break;
+                case LogLevel.Warning:
+                    _logger.LogWarning(_options.Format, logEntry.Operation, logEntry.Duration);
+                    break;
+                case LogLevel.Critical:
+                    _logger.LogCritical(_options.Format, logEntry.Operation, logEntry.Duration);
+                    break;
+                case LogLevel.Error:
+                    _logger.LogError(_options.Format, logEntry.Operation, logEntry.Duration);
+                    break;
+                case LogLevel.Trace:
+                    _logger.LogTrace(_options.Format, logEntry.Operation, logEntry.Duration);
+                    break;
+                 case LogLevel.None:
+                    _logger.LogInformation(_options.Format, logEntry.Operation, logEntry.Duration);
+                    break;
+            }
+
+
         }
     }
 
@@ -77,14 +100,14 @@ namespace PerformanceLog
     public interface IOptions
     {
         IOptions WithLogLevel(LogLevel logLevel);
-        IOptions WithFormatter(Func<LogItem, Exception, string> formatter);
+        IOptions WithFormat(string format);
     }
 
     public class PerformanceLogOptions : IPerformanceLogOptions, IOptions
     {
         public LogLevel LogLevel { get; set; }
 
-        public Func<LogItem, Exception, string> Formatter { get; set; }
+        public string Format { get; set; }
 
         public PerformanceLogOptions()
         {
@@ -94,12 +117,12 @@ namespace PerformanceLog
         public void Default()
         {
             LogLevel = LogLevel.Information;
-            Formatter = (log, exception) => { return $"Performance: {log}"; };
+            Format = "request to {0} took {1}ms";
         }
 
-        public IOptions WithFormatter(Func<LogItem, Exception, string> formatter)
+        public IOptions WithFormat(string format)
         {
-            this.Formatter = formatter;
+            this.Format = format;
             return this;
         }
 
@@ -108,11 +131,12 @@ namespace PerformanceLog
             return this;
         }
 
-        IOptions IOptions.WithLogLevel(LogLevel logLevel)
+        public IOptions WithLogLevel(LogLevel logLevel)
         {
             this.LogLevel = logLevel;
             return this;
         }
+
     }
 
 
