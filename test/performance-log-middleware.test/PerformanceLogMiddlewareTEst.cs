@@ -12,6 +12,14 @@ using Moq;
 using Xunit;
 using Microsoft.AspNetCore.Http;
 using System.Threading.Tasks;
+using Serilog.Core;
+using Serilog.Events;
+using Serilog;
+using System.IO;
+using Serilog.Formatting.Json;
+using Serilog.Filters;
+using Serilog.Formatting.Compact;
+using Serilog.Formatting;
 
 namespace Tests
 {
@@ -83,7 +91,7 @@ namespace Tests
         }
 
 
-        private Mock<ILoggerFactory> GetLoggerFactory(ILogger logger)
+        private Mock<ILoggerFactory> GetLoggerFactory(Microsoft.Extensions.Logging.ILogger logger)
         {
             var loggerFactory = new Mock<ILoggerFactory>();
             loggerFactory.Setup(x => x.CreateLogger(It.IsAny<string>())).Returns(logger);
@@ -134,7 +142,7 @@ namespace Tests
                 )
                 .Configure(app =>
                 {
-                    app.UsePerformanceLog(options => options.Configure().WithFormatter((logItem, exception)=> { return string.Format("customduration: {0}", logItem.Duration); }));
+                    app.UsePerformanceLog(options => options.Configure().WithFormatter((logItem, exception) => { return string.Format("customduration: {0}", logItem.Duration); }));
                     app.UseMiddleware<FakeMiddleware>(TimeSpan.FromMilliseconds(20));
                 });
 
@@ -251,7 +259,7 @@ namespace Tests
                     app.UsePerformanceLog(options => options.Default());
                     app.UseMiddleware<FakeMiddleware>(TimeSpan.FromMilliseconds(20));
                 });
-            
+
             var server = new TestServer(builder);
 
             //Act 
@@ -259,21 +267,44 @@ namespace Tests
             var responseMessage = await server.CreateClient().SendAsync(requestMessage);
         }
 
+        public class CustomFormatter : ITextFormatter
+        {
+            public void Format(LogEvent logEvent, TextWriter output)
+            {
+                output.Write("something");
+            }
+        }
+
         [Fact, Trait("Category", "Usage")]
         public async void InvokeTest_TestWithSerilog()
         {
+
+            List<LogEvent> logs = new List<LogEvent>();
+            var sink = new Mock<ILogEventSink>();
+            sink.Setup(s => s.Emit(It.IsAny<LogEvent>())).Callback((LogEvent l) => { logs.Add(l); });
+            var logger = new Serilog.LoggerConfiguration()
+            .MinimumLevel.Debug()
+            //.Filter.
+            .WriteTo.RollingFile(new JsonFormatter(), Path.Combine("c:\\logs\\", "log-{Date}.txt"))
+            .WriteTo.RollingFile(Path.Combine("c:\\logs\\", "log2-{Date}.txt"))
+            .WriteTo.Logger(lc => lc
+                .Filter.ByIncludingOnly(Matching.FromSource("performance"))
+                //.WriteTo.RollingFile(new RenderedCompactJsonFormatter(), Path.Combine("c:\\logs\\", "log-perf-{Date}.txt")).WriteTo.LiterateConsole())
+                .WriteTo.RollingFile(new CustomFormatter(), Path.Combine("c:\\logs\\", "log-perf-{Date}.txt")).WriteTo.LiterateConsole())
+                .WriteTo.Sink(sink.Object)
+            .CreateLogger();
+
+            var count = 456;
+            logger.Information("Retrieved {Count} records", count);
+
+            Serilog.Log.Logger = logger;
+
             //Arrange
             var builder = new WebHostBuilder()
-                .ConfigureServices(app =>
-                {
-                    app.AddLogging();
-                }
-                )
                 .Configure((app) =>
                 {
-                    var loggingService = app.ApplicationServices.GetService<ILoggerFactory>();
-                    loggingService.AddConsole(true);
-                    loggingService.AddDebug();
+                    var loggerFactory = app.ApplicationServices.GetService<ILoggerFactory>();
+                    loggerFactory.AddSerilog();
                     app.UsePerformanceLog(options => options.Default());
                     app.UseMiddleware<FakeMiddleware>(TimeSpan.FromMilliseconds(20));
                 });
@@ -283,6 +314,7 @@ namespace Tests
             //Act 
             var requestMessage = new HttpRequestMessage(new HttpMethod("GET"), "/delay/");
             var responseMessage = await server.CreateClient().SendAsync(requestMessage);
+
         }
     }
 }

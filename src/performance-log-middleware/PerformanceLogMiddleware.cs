@@ -35,7 +35,9 @@ namespace PerformanceLog
                 Operation = context.Request.Path,
                 CorrelationId = correlationId
             };
-
+            _logger.LogInformation("here is a log");
+            
+            _logger.LogInformation("request to {operation} took {duration}ms", logEntry.Operation, logEntry.Duration);
             _logger.Log(_options.LogLevel, new EventId(), logEntry, null, _options.Formatter);
         }
     }
