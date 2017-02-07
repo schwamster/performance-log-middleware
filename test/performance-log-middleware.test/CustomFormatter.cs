@@ -89,7 +89,7 @@ namespace Tests
 
                 if (name == "RequestId")
                 {
-                    name = "traceIdentifier";
+                    name = "correlationId";
                 }
 
                 if (name != null && name.Length > 1)

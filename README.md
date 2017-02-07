@@ -50,6 +50,8 @@ PerformanceLogOptions
 Be aware that asp.net core logging is semantic/structured so the order matters and you cant address a paramter by {1}. It will always 
 use the paramters in the same order => [asp.net core log formatting](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/logging#log-message-format-string)
 
+Look at the unit tests (category: usage) if you want more examples on how to set up logging, e.g. with serilog
+
 ###Contributions
 
 Contributors are very welcome. Missing a feature? Have some hints about what can be done better?

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Net.Http;
 using FluentAssertions;
 using Microsoft.AspNetCore.Builder;
@@ -10,8 +9,6 @@ using PerformanceLog;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
-using Microsoft.AspNetCore.Http;
-using System.Threading.Tasks;
 using Serilog.Core;
 using Serilog.Events;
 using Serilog;
@@ -25,90 +22,6 @@ using System.Linq;
 
 namespace Tests
 {
-    public class TestLogger : ILogger<PerformanceLogMiddleware>
-    {
-        public List<Tuple<LogLevel, string>> Logs { get; set; }
-
-        public TestLogger()
-        {
-            Logs = new List<Tuple<LogLevel, string>>();
-        }
-
-        public LogItem LogItem { get; set; }
-
-        public bool IsEnabled(LogLevel logLevel)
-        {
-            return true;
-        }
-
-        public IDisposable BeginScope<TState>(TState state)
-        {
-            return null;
-        }
-
-        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
-        {
-            var logItem = state as LogItem;
-            if (logItem != null)
-            {
-                this.LogItem = logItem;
-            }
-            this.Logs.Add(new Tuple<LogLevel, string>(logLevel, formatter(state, exception)));
-        }
-    }
-
-    public class FakeMiddleware
-    {
-        private TimeSpan _delay;
-        private RequestDelegate _next;
-
-        private Microsoft.Extensions.Logging.ILogger _logger;
-
-        public FakeMiddleware(RequestDelegate next, ILoggerFactory loggerFactory, TimeSpan delay)
-        {
-            this._next = next;
-            this._delay = delay;
-            this._logger = loggerFactory.CreateLogger("something");
-        }
-
-        public async Task Invoke(HttpContext context)
-        {
-            _logger.LogInformation("FakeMiddleware has been called");
-            System.Threading.Thread.Sleep(_delay);
-
-            if (context.Request.Path.StartsWithSegments("/throw"))
-            {
-                throw new InvalidOperationException("expected exception");
-            }
-            await _next(context);
-        }
-
-    }
-
-public class CorrelationIdMiddleware
-    {
-        private string _header;
-        private RequestDelegate _next;
-
-        private Microsoft.Extensions.Logging.ILogger _logger;
-
-        public CorrelationIdMiddleware(RequestDelegate next, ILogger<CorrelationIdMiddleware> logger, string header)
-        {
-            this._next = next;
-            this._header = header;
-            this._logger = logger;
-        }
-
-        public async Task Invoke(HttpContext context)
-        {
-            string correlationId = context.TraceIdentifier;
-            // StringValues 
-            // context.Request.Headers.TryGetValue(this._header, out correlationId)
-            _logger.LogInformation("FakeMiddleware has been called");
-            await _next(context);
-        }
-
-    }
     public class PerformanceLogMiddlewareTest
     {
         [Fact]
@@ -156,8 +69,8 @@ public class CorrelationIdMiddleware
             var logItem = logger.Logs.FirstOrDefault(x => x.Item1 == LogLevel.Information && x.Item2.StartsWith("request"));
             logItem.Should().NotBeNull();
 
-            var duration = Regex.Match(logItem.Item2,"request to .* took ([0-9\\.]*)ms").Groups[1].Value;
-            double.Parse(duration).Should().BeInRange(20, 30);
+            var duration = Regex.Match(logItem.Item2, "request to .* took ([0-9\\.]*)ms").Groups[1].Value;
+            double.Parse(duration).Should().BeInRange(19, 30);
         }
 
         [Fact]
@@ -187,8 +100,8 @@ public class CorrelationIdMiddleware
             //Assert
             var logItem = logger.Logs.FirstOrDefault(x => x.Item1 == LogLevel.Information && x.Item2.StartsWith("customduration: "));
             logItem.Should().NotBeNull();
-            var duration = Regex.Match(logItem.Item2,"customduration\\: .* => ([0-9\\.]*)").Groups[1].Value;
-            double.Parse(duration).Should().BeInRange(20, 30);
+            var duration = Regex.Match(logItem.Item2, "customduration\\: .* => ([0-9\\.]*)").Groups[1].Value;
+            double.Parse(duration).Should().BeInRange(19, 30);
         }
 
         [Fact]
@@ -219,8 +132,40 @@ public class CorrelationIdMiddleware
             var logItem = logger.Logs.FirstOrDefault(x => x.Item1 == LogLevel.Trace && x.Item2.StartsWith("request"));
             logItem.Should().NotBeNull();
 
-            var duration = Regex.Match(logItem.Item2,"request to .* took ([0-9\\.]*)ms").Groups[1].Value;
-            double.Parse(duration).Should().BeInRange(20, 30);
+            var duration = Regex.Match(logItem.Item2, "request to .* took ([0-9\\.]*)ms").Groups[1].Value;
+            double.Parse(duration).Should().BeInRange(19, 30);
+        }
+
+        [Fact]
+        public async void InvokeTest_GivenCustomLogLevelCritical_LogsDuration()
+        {
+            //Arrange
+            var logger = new TestLogger();
+
+            var builder = new WebHostBuilder()
+                .ConfigureServices(app =>
+                {
+                    app.AddSingleton<ILoggerFactory>(GetLoggerFactory(logger).Object);
+                }
+                )
+                .Configure(app =>
+                {
+                    app.UsePerformanceLog(options => options.Configure().WithLogLevel(LogLevel.Critical));
+                    app.UseMiddleware<FakeMiddleware>(TimeSpan.FromMilliseconds(20));
+                });
+
+            var server = new TestServer(builder);
+
+            //Act 
+            var requestMessage = new HttpRequestMessage(new HttpMethod("GET"), "/delay/");
+            var responseMessage = await server.CreateClient().SendAsync(requestMessage);
+
+            //Assert
+            var logItem = logger.Logs.FirstOrDefault(x => x.Item1 == LogLevel.Critical && x.Item2.StartsWith("request"));
+            logItem.Should().NotBeNull();
+
+            var duration = Regex.Match(logItem.Item2, "request to .* took ([0-9\\.]*)ms").Groups[1].Value;
+            double.Parse(duration).Should().BeInRange(19, 30);
         }
 
 
@@ -320,13 +265,13 @@ public class CorrelationIdMiddleware
             .MinimumLevel.Debug()
             .WriteTo.Logger(lc => lc
                 .Filter.ByExcluding(Matching.FromSource("performance"))
-                .WriteTo.RollingFile(formatter, Path.Combine("c:\\logs\\", "log-{Date}.txt"))
+                .WriteTo.RollingFile(formatter, Path.Combine(".\\logs\\", "log-{Date}.log"))
                 .WriteTo.Console(formatter))
             .WriteTo.Logger(lc => lc
                 .Filter.ByIncludingOnly(Matching.FromSource("performance"))
-                .WriteTo.RollingFile(formatter, Path.Combine("c:\\logs\\", "log-perf-{Date}.txt"))
+                .WriteTo.RollingFile(formatter, Path.Combine(".\\logs\\", "log-perf-{Date}.log"))
                 .WriteTo.Console(formatter))
-            .CreateLogger();            
+            .CreateLogger();
 
             //Arrange
             var builder = new WebHostBuilder()
@@ -342,6 +287,119 @@ public class CorrelationIdMiddleware
 
             //Act 
             var requestMessage = new HttpRequestMessage(new HttpMethod("GET"), "/delay/");
+            var responseMessage = await server.CreateClient().SendAsync(requestMessage);
+
+        }
+
+        [Fact, Trait("Category", "Usage")]
+        public async void InvokeTest_TestWithSerilogAndCorrelationMiddleware()
+        {
+            var formatter = new CustomJsonFormatter("testapp");
+            Serilog.Log.Logger = new Serilog.LoggerConfiguration()
+            .MinimumLevel.Debug()
+            .WriteTo.Logger(lc => lc
+                .Filter.ByExcluding(Matching.FromSource("performance"))
+                .WriteTo.RollingFile(formatter, Path.Combine(".\\logs\\", "log-{Date}.log"))
+                .WriteTo.Console(formatter))
+            .WriteTo.Logger(lc => lc
+                .Filter.ByIncludingOnly(Matching.FromSource("performance"))
+                .WriteTo.RollingFile(formatter, Path.Combine(".\\logs\\", "log-perf-{Date}.log"))
+                .WriteTo.Console(formatter))
+            .CreateLogger();
+
+            //Arrange
+            var builder = new WebHostBuilder()
+                .Configure((app) =>
+                {
+                    var loggerFactory = app.ApplicationServices.GetService<ILoggerFactory>();
+                    loggerFactory.AddSerilog();
+                    app.UseMiddleware<CorrelationIdMiddleware>("X-Correlation-Id");
+                    app.UsePerformanceLog(options => options.Configure().WithFormat("request to {operation} took {duration}ms"));
+                    app.UseMiddleware<FakeMiddleware>(TimeSpan.FromMilliseconds(20));
+                });
+
+            var server = new TestServer(builder);
+
+            //Act 
+            var requestMessage = new HttpRequestMessage(new HttpMethod("GET"), "/delay/");
+            requestMessage.Headers.TryAddWithoutValidation("X-Correlation-Id", "jonas");
+            var responseMessage = await server.CreateClient().SendAsync(requestMessage);
+
+        }
+
+        [Fact, Trait("Category", "Usage")]
+        public async void InvokeTest_TestWithSerilogAndCorrelationMiddlewareWithCriticalLogLevel()
+        {
+            
+            var formatter = new CustomJsonFormatter("testapp");
+            Serilog.Log.Logger = new Serilog.LoggerConfiguration()
+            .MinimumLevel.Verbose()
+            .WriteTo.Logger(lc => lc
+                .Filter.ByExcluding(Matching.FromSource("performance"))
+                .WriteTo.RollingFile(formatter, Path.Combine(".\\logs\\", "log-{Date}.log"))
+                .WriteTo.Console(formatter))
+            .WriteTo.Logger(lc => lc
+                .Filter.ByIncludingOnly(Matching.FromSource("performance"))
+                .WriteTo.RollingFile(formatter, Path.Combine(".\\logs\\", "log-perf-{Date}.log"))
+                .WriteTo.Console(formatter))
+            .CreateLogger();
+
+            //Arrange
+            var builder = new WebHostBuilder()
+                .Configure((app) =>
+                {
+                    var loggerFactory = app.ApplicationServices.GetService<ILoggerFactory>();
+                    loggerFactory.AddSerilog();
+                    app.UseMiddleware<CorrelationIdMiddleware>("X-Correlation-Id");
+                    app.UsePerformanceLog(options => options.Configure()
+                        .WithFormat("request to {operation} took {duration}ms")
+                        .WithLogLevel(LogLevel.Critical));
+                    app.UseMiddleware<FakeMiddleware>(TimeSpan.FromMilliseconds(20));
+                });
+
+            var server = new TestServer(builder);
+
+            //Act 
+            var requestMessage = new HttpRequestMessage(new HttpMethod("GET"), "/delay/");
+            requestMessage.Headers.TryAddWithoutValidation("X-Correlation-Id", "jonas");
+            var responseMessage = await server.CreateClient().SendAsync(requestMessage);
+
+        }
+
+
+
+        [Fact, Trait("Category", "Usage")]
+        public async void InvokeTest_TestWithSerilogAndNormal()
+        {
+            var formatter = new CustomJsonFormatter("testapp");
+            Serilog.Log.Logger = new Serilog.LoggerConfiguration()
+            .MinimumLevel.Debug()
+            .WriteTo.Logger(lc => lc
+                .Filter.ByExcluding(Matching.FromSource("performance"))
+                .WriteTo.RollingFile(formatter, Path.Combine(".\\logs\\", "log-{Date}.log"))
+                .WriteTo.Console(formatter))
+            .WriteTo.Logger(lc => lc
+                .Filter.ByIncludingOnly(Matching.FromSource("performance"))
+                .WriteTo.RollingFile(formatter, Path.Combine(".\\logs\\", "log-perf-{Date}.log"))
+                .WriteTo.Console(formatter))
+            .CreateLogger();
+
+            //Arrange
+            var builder = new WebHostBuilder()
+                .Configure((app) =>
+                {
+                    var loggerFactory = app.ApplicationServices.GetService<ILoggerFactory>();
+                    loggerFactory.AddSerilog();
+                    app.UseMiddleware<CorrelationIdMiddleware>("X-Correlation-Id");
+                    app.UsePerformanceLog(options => options.Configure().WithFormat("request to {operation} took {duration}ms"));
+                    app.UseMiddleware<FakeMiddleware>(TimeSpan.FromMilliseconds(20));
+                });
+
+            var server = new TestServer(builder);
+
+            //Act 
+            var requestMessage = new HttpRequestMessage(new HttpMethod("GET"), "/delay/");
+            requestMessage.Headers.TryAddWithoutValidation("X-Correlation-Id", "jonas");
             var responseMessage = await server.CreateClient().SendAsync(requestMessage);
 
         }
