@@ -41,10 +41,14 @@ Thats it. Now you application logs all request durations to your configured logg
 PerformanceLogOptions
 
 * LogLevel (optional): Log level the performance logger should UsePerformanceLog. Default: Information
-* Format (optional): Default: "request to {0} took {1}ms"
-        params: 
+* Format (optional): Default: "request to {Operation} took {Duration}ms"
+        possible params: 
         0: operation
         1: duration in ms
+        2: correlationId (the correlationId is equal to Context.TraceIdentifier)
+
+Be aware that asp.net core logging is semantic/structured so the order matters and you cant address a paramter by {1}. It will always 
+use the paramters in the same order => [asp.net core log formatting](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/logging#log-message-format-string)
 
 ###Contributions
 

@@ -20,7 +20,9 @@
     "Serilog.Sinks.RollingFile": "3.3.0",
     "Serilog.Sinks.File": "3.2.0",
     "Serilog.Sinks.Literate": "2.0.0",
-    "Serilog.Formatting.Compact": "1.0.0"
+    "Serilog.Formatting.Compact": "1.0.0",
+    "Serilog.Sinks.Console": "2.1.0",
+    "System.Text.RegularExpressions": "4.3.0"
   },
   "testRunner": "xunit",
   "frameworks": {

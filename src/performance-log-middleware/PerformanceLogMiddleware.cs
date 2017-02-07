@@ -24,8 +24,7 @@ namespace PerformanceLog
 
         public async Task Invoke(HttpContext context)
         {
-            var correlationId = context.TraceIdentifier; //Guid.NewGuid().ToString();
-
+            var correlationId = context.TraceIdentifier;
 
             var stopwatch = Stopwatch.StartNew();
             await _next(context);
@@ -39,25 +38,25 @@ namespace PerformanceLog
             switch (_options.LogLevel)
             {
                 case LogLevel.Information:
-                    _logger.LogInformation(_options.Format, logEntry.Operation, logEntry.Duration);
+                    _logger.LogInformation(_options.Format, logEntry.Operation, logEntry.Duration, logEntry.CorrelationId);
                     break;
                 case LogLevel.Debug:
-                    _logger.LogDebug(_options.Format, logEntry.Operation, logEntry.Duration);
+                    _logger.LogDebug(_options.Format, logEntry.Operation, logEntry.Duration, logEntry.CorrelationId);
                     break;
                 case LogLevel.Warning:
-                    _logger.LogWarning(_options.Format, logEntry.Operation, logEntry.Duration);
+                    _logger.LogWarning(_options.Format, logEntry.Operation, logEntry.Duration, logEntry.CorrelationId);
                     break;
                 case LogLevel.Critical:
-                    _logger.LogCritical(_options.Format, logEntry.Operation, logEntry.Duration);
+                    _logger.LogCritical(_options.Format, logEntry.Operation, logEntry.Duration, logEntry.CorrelationId);
                     break;
                 case LogLevel.Error:
-                    _logger.LogError(_options.Format, logEntry.Operation, logEntry.Duration);
+                    _logger.LogError(_options.Format, logEntry.Operation, logEntry.Duration, logEntry.CorrelationId);
                     break;
                 case LogLevel.Trace:
-                    _logger.LogTrace(_options.Format, logEntry.Operation, logEntry.Duration);
+                    _logger.LogTrace(_options.Format, logEntry.Operation, logEntry.Duration, logEntry.CorrelationId);
                     break;
                  case LogLevel.None:
-                    _logger.LogInformation(_options.Format, logEntry.Operation, logEntry.Duration);
+                    _logger.LogInformation(_options.Format, logEntry.Operation, logEntry.Duration, logEntry.CorrelationId);
                     break;
             }
 
@@ -117,7 +116,7 @@ namespace PerformanceLog
         public void Default()
         {
             LogLevel = LogLevel.Information;
-            Format = "request to {0} took {1}ms";
+            Format = "request to {Operation} took {Duration}ms";
         }
 
         public IOptions WithFormat(string format)

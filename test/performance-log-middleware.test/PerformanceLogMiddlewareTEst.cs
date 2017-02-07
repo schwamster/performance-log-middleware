@@ -20,6 +20,8 @@ using Serilog.Formatting.Json;
 using Serilog.Filters;
 using Serilog.Formatting.Compact;
 using Serilog.Formatting;
+using System.Text.RegularExpressions;
+using System.Linq;
 
 namespace Tests
 {
@@ -60,15 +62,18 @@ namespace Tests
         private TimeSpan _delay;
         private RequestDelegate _next;
 
-        public FakeMiddleware(RequestDelegate next, TimeSpan delay)
+        private Microsoft.Extensions.Logging.ILogger _logger;
+
+        public FakeMiddleware(RequestDelegate next, ILoggerFactory loggerFactory, TimeSpan delay)
         {
             this._next = next;
             this._delay = delay;
+            this._logger = loggerFactory.CreateLogger("something");
         }
 
         public async Task Invoke(HttpContext context)
         {
-
+            _logger.LogInformation("FakeMiddleware has been called");
             System.Threading.Thread.Sleep(_delay);
 
             if (context.Request.Path.StartsWithSegments("/throw"))
@@ -80,6 +85,30 @@ namespace Tests
 
     }
 
+public class CorrelationIdMiddleware
+    {
+        private string _header;
+        private RequestDelegate _next;
+
+        private Microsoft.Extensions.Logging.ILogger _logger;
+
+        public CorrelationIdMiddleware(RequestDelegate next, ILogger<CorrelationIdMiddleware> logger, string header)
+        {
+            this._next = next;
+            this._header = header;
+            this._logger = logger;
+        }
+
+        public async Task Invoke(HttpContext context)
+        {
+            string correlationId = context.TraceIdentifier;
+            // StringValues 
+            // context.Request.Headers.TryGetValue(this._header, out correlationId)
+            _logger.LogInformation("FakeMiddleware has been called");
+            await _next(context);
+        }
+
+    }
     public class PerformanceLogMiddlewareTest
     {
         [Fact]
@@ -124,8 +153,11 @@ namespace Tests
             var responseMessage = await server.CreateClient().SendAsync(requestMessage);
 
             //Assert
-            logger.Logs.Exists(x => x.Item1 == LogLevel.Information && x.Item2.StartsWith("request")).Should().BeTrue();
-            logger.LogItem.Duration.Should().BeInRange(20, 30);
+            var logItem = logger.Logs.FirstOrDefault(x => x.Item1 == LogLevel.Information && x.Item2.StartsWith("request"));
+            logItem.Should().NotBeNull();
+
+            var duration = Regex.Match(logItem.Item2,"request to .* took ([0-9\\.]*)ms").Groups[1].Value;
+            double.Parse(duration).Should().BeInRange(20, 30);
         }
 
         [Fact]
@@ -142,7 +174,7 @@ namespace Tests
                 )
                 .Configure(app =>
                 {
-                    app.UsePerformanceLog(options => options.Configure().WithFormat("customduration: {1}"));
+                    app.UsePerformanceLog(options => options.Configure().WithFormat("customduration: {operation} => {duration}"));
                     app.UseMiddleware<FakeMiddleware>(TimeSpan.FromMilliseconds(20));
                 });
 
@@ -153,8 +185,10 @@ namespace Tests
             var responseMessage = await server.CreateClient().SendAsync(requestMessage);
 
             //Assert
-            logger.Logs.Exists(x => x.Item1 == LogLevel.Information && x.Item2.StartsWith("customduration: ")).Should().BeTrue();
-            logger.LogItem.Duration.Should().BeInRange(20, 30);
+            var logItem = logger.Logs.FirstOrDefault(x => x.Item1 == LogLevel.Information && x.Item2.StartsWith("customduration: "));
+            logItem.Should().NotBeNull();
+            var duration = Regex.Match(logItem.Item2,"customduration\\: .* => ([0-9\\.]*)").Groups[1].Value;
+            double.Parse(duration).Should().BeInRange(20, 30);
         }
 
         [Fact]
@@ -182,8 +216,11 @@ namespace Tests
             var responseMessage = await server.CreateClient().SendAsync(requestMessage);
 
             //Assert
-            logger.Logs.Exists(x => x.Item1 == LogLevel.Trace && x.Item2.StartsWith("Performance")).Should().BeTrue();
-            logger.LogItem.Duration.Should().BeInRange(20, 30);
+            var logItem = logger.Logs.FirstOrDefault(x => x.Item1 == LogLevel.Trace && x.Item2.StartsWith("request"));
+            logItem.Should().NotBeNull();
+
+            var duration = Regex.Match(logItem.Item2,"request to .* took ([0-9\\.]*)ms").Groups[1].Value;
+            double.Parse(duration).Should().BeInRange(20, 30);
         }
 
 
@@ -278,25 +315,18 @@ namespace Tests
         [Fact, Trait("Category", "Usage")]
         public async void InvokeTest_TestWithSerilog()
         {
-            List<LogEvent> logs = new List<LogEvent>();
-            var sink = new Mock<ILogEventSink>();
-            sink.Setup(s => s.Emit(It.IsAny<LogEvent>())).Callback((LogEvent l) => { logs.Add(l); });
-            var logger = new Serilog.LoggerConfiguration()
+            var formatter = new CustomJsonFormatter("testapp");
+            Serilog.Log.Logger = new Serilog.LoggerConfiguration()
             .MinimumLevel.Debug()
-            //.Filter.
-            .WriteTo.RollingFile(new JsonFormatter(), Path.Combine("c:\\logs\\", "log-{Date}.txt"))
-            .WriteTo.RollingFile(Path.Combine("c:\\logs\\", "log2-{Date}.txt"))
+            .WriteTo.Logger(lc => lc
+                .Filter.ByExcluding(Matching.FromSource("performance"))
+                .WriteTo.RollingFile(formatter, Path.Combine("c:\\logs\\", "log-{Date}.txt"))
+                .WriteTo.Console(formatter))
             .WriteTo.Logger(lc => lc
                 .Filter.ByIncludingOnly(Matching.FromSource("performance"))
-                //.WriteTo.RollingFile(new RenderedCompactJsonFormatter(), Path.Combine("c:\\logs\\", "log-perf-{Date}.txt")).WriteTo.LiterateConsole())
-                .WriteTo.RollingFile(new CustomJsonFormatter("testapp"), Path.Combine("c:\\logs\\", "log-perf-{Date}.txt")).WriteTo.LiterateConsole())
-                .WriteTo.Sink(sink.Object)
-            .CreateLogger();
-
-            var count = 456;
-            logger.Information("Retrieved {Count} records", count);
-
-            Serilog.Log.Logger = logger;
+                .WriteTo.RollingFile(formatter, Path.Combine("c:\\logs\\", "log-perf-{Date}.txt"))
+                .WriteTo.Console(formatter))
+            .CreateLogger();            
 
             //Arrange
             var builder = new WebHostBuilder()
@@ -304,7 +334,7 @@ namespace Tests
                 {
                     var loggerFactory = app.ApplicationServices.GetService<ILoggerFactory>();
                     loggerFactory.AddSerilog();
-                    app.UsePerformanceLog(options => options.Configure().WithFormat("request to {operation} took {duration}ms"));
+                    app.UsePerformanceLog(options => options.Configure().WithFormat("request to {operation} took {duration}ms {correlationId}"));
                     app.UseMiddleware<FakeMiddleware>(TimeSpan.FromMilliseconds(20));
                 });
 
