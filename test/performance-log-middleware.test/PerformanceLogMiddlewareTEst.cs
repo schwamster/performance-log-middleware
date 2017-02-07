@@ -369,11 +369,15 @@ namespace Tests
 
 
         [Fact, Trait("Category", "Usage")]
-        public async void InvokeTest_TestWithSerilogAndNormal()
+        public async void InvokeTest_TestWithSerilogAndNormalLog()
         {
             var formatter = new CustomJsonFormatter("testapp");
             Serilog.Log.Logger = new Serilog.LoggerConfiguration()
             .MinimumLevel.Debug()
+            .Enrich.WithThreadId()
+            .Enrich.WithIdentity()
+            .Enrich.FromLogContext()
+            //.Enrich.FromLogContext()
             .WriteTo.Logger(lc => lc
                 .Filter.ByExcluding(Matching.FromSource("performance"))
                 .WriteTo.RollingFile(formatter, Path.Combine(".\\logs\\", "log-{Date}.log"))

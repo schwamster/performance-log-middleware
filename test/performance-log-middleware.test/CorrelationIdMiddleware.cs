@@ -1,10 +1,48 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
+using Serilog;
+using Serilog.Configuration;
+using Serilog.Core;
+using Serilog.Enrichers;
+using Serilog.Events;
 
 namespace Tests
 {
+    public class OperationEnricher : ILogEventEnricher
+    {
+        public const string OperationUserIdPropertyName = "User";
+
+        public void Enrich(LogEvent logEvent, ILogEventPropertyFactory propertyFactory)
+        {
+            //logEvent.AddPropertyIfAbsent(new LogEventProperty(ThreadIdUserIdPropertyName, new ScalarValue("user1")));
+        }
+
+    }
+
+    public class IdentityEnricher : ILogEventEnricher
+    {
+        public const string UserIdPropertyName = "User";
+
+        public void Enrich(LogEvent logEvent, ILogEventPropertyFactory propertyFactory)
+        {
+            logEvent.AddPropertyIfAbsent(new LogEventProperty(UserIdPropertyName, new ScalarValue("user1")));
+        }
+
+    }
+
+    public static class ThreadLoggerConfigurationIdentityEnricherExtensions
+    {
+        public static LoggerConfiguration WithIdentity(
+            this LoggerEnrichmentConfiguration enrichmentConfiguration)
+        {
+            if (enrichmentConfiguration == null) throw new ArgumentNullException(nameof(enrichmentConfiguration));
+            return enrichmentConfiguration.With<IdentityEnricher>();
+        }
+    }
+
     public class CorrelationIdMiddleware
     {
         private string _header;

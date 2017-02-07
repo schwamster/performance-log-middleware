@@ -22,7 +22,8 @@
     "Serilog.Sinks.Literate": "2.0.0",
     "Serilog.Formatting.Compact": "1.0.0",
     "Serilog.Sinks.Console": "2.1.0",
-    "System.Text.RegularExpressions": "4.3.0"
+    "System.Text.RegularExpressions": "4.3.0",
+    "Serilog.Enrichers.Thread":  "3.0.0" 
   },
   "testRunner": "xunit",
   "frameworks": {
