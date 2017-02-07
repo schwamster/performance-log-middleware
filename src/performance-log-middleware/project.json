@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0-beta-*",
+  "version": "1.1.0-beta-*",
   "packOptions": {
     "licenseUrl": "https://github.com/schwamster/performance-log-middleware/blob/master/LICENSE.md",
     "projectUrl": "https://github.com/schwamster/performance-log-middleware"
