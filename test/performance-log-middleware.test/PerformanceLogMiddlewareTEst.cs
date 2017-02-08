@@ -19,6 +19,8 @@ using Serilog.Formatting.Compact;
 using Serilog.Formatting;
 using System.Text.RegularExpressions;
 using System.Linq;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Tests
 {
@@ -375,9 +377,7 @@ namespace Tests
             Serilog.Log.Logger = new Serilog.LoggerConfiguration()
             .MinimumLevel.Debug()
             .Enrich.WithThreadId()
-            .Enrich.WithIdentity()
             .Enrich.FromLogContext()
-            //.Enrich.FromLogContext()
             .WriteTo.Logger(lc => lc
                 .Filter.ByExcluding(Matching.FromSource("performance"))
                 .WriteTo.RollingFile(formatter, Path.Combine(".\\logs\\", "log-{Date}.log"))
@@ -395,6 +395,7 @@ namespace Tests
                     var loggerFactory = app.ApplicationServices.GetService<ILoggerFactory>();
                     loggerFactory.AddSerilog();
                     app.UseMiddleware<CorrelationIdMiddleware>("X-Correlation-Id");
+                    app.UseSerilogEnricherMiddleware();
                     app.UsePerformanceLog(options => options.Configure().WithFormat("request to {operation} took {duration}ms"));
                     app.UseMiddleware<FakeMiddleware>(TimeSpan.FromMilliseconds(20));
                 });
