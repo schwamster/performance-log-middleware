@@ -1,21 +1,20 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27428.2015
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{ADEEFFEE-CC51-4953-B146-BA0C102DB863}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "performance-log-middleware", "src\performance-log-middleware\performance-log-middleware.xproj", "{211618DF-334C-4882-A26E-A097C1269DDA}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{28A985D1-A809-42A6-B494-2ADFF642C9AD}"
 	ProjectSection(SolutionItems) = preProject
-		global.json = global.json
 		README.md = README.md
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{BF1A6AE5-52CE-4D0B-85B4-F507F00CF41C}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "performance-log-middleware.test", "test\performance-log-middleware.test\performance-log-middleware.test.xproj", "{4D261EA9-28DD-4AD1-9EC0-CE947A7DE32A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "performance-log-middleware", "src\performance-log-middleware\performance-log-middleware.csproj", "{211618DF-334C-4882-A26E-A097C1269DDA}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "performance-log-middleware.test", "test\performance-log-middleware.test\performance-log-middleware.test.csproj", "{4D261EA9-28DD-4AD1-9EC0-CE947A7DE32A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -38,5 +37,8 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{211618DF-334C-4882-A26E-A097C1269DDA} = {ADEEFFEE-CC51-4953-B146-BA0C102DB863}
 		{4D261EA9-28DD-4AD1-9EC0-CE947A7DE32A} = {BF1A6AE5-52CE-4D0B-85B4-F507F00CF41C}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {3A515837-167B-4B62-A8DC-D4E1D80D0D93}
 	EndGlobalSection
 EndGlobal
