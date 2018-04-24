@@ -102,7 +102,7 @@ namespace Tests
             logItem.Should().NotBeNull();
 
             var duration = Regex.Match(logItem.Item2, "request to .* took ([0-9\\.]*)ms").Groups[1].Value;
-            double.Parse(duration).Should().BeInRange(19, 30);
+            double.Parse(duration).Should().BeInRange(0.1, 0.3);
         }
 
         [Fact]
