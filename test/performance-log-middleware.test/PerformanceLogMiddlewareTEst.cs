@@ -74,6 +74,38 @@ namespace Tests
         }
 
         [Fact]
+        public async void InvokeTest_GivenSubMsDelay_LogsDurationAccuratly()
+        {
+            //Arrange
+            var logger = new TestLogger();
+
+            var builder = new WebHostBuilder()
+                .ConfigureServices(app =>
+                {
+                    app.AddSingleton<ILoggerFactory>(GetLoggerFactory(logger).Object);
+                }
+                )
+                .Configure(app =>
+                {
+                    app.UsePerformanceLog(options => options.Default());
+                    app.UseMiddleware<FakeMiddleware>(TimeSpan.FromMilliseconds(0.2));
+                });
+
+            var server = new TestServer(builder);
+
+            //Act 
+            var requestMessage = new HttpRequestMessage(new HttpMethod("GET"), "/delay/");
+            var responseMessage = await server.CreateClient().SendAsync(requestMessage);
+
+            //Assert
+            var logItem = logger.Logs.FirstOrDefault(x => x.Item1 == LogLevel.Information && x.Item2.StartsWith("request"));
+            logItem.Should().NotBeNull();
+
+            var duration = Regex.Match(logItem.Item2, "request to .* took ([0-9\\.]*)ms").Groups[1].Value;
+            double.Parse(duration).Should().BeInRange(19, 30);
+        }
+
+        [Fact]
         public async void InvokeTest_GivenCustomFormat_LogsDuration()
         {
             //Arrange

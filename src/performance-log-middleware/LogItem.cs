@@ -1,8 +1,10 @@
-﻿namespace PerformanceLog
+﻿using System;
+
+namespace PerformanceLog
 {
     public class LogItem
     {
-        public long Duration { get; set; }
+        public double Duration { get; set; }
         public string Operation { get; set; }
 
         public string CorrelationId { get; set; }

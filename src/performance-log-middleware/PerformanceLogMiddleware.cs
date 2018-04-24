@@ -28,7 +28,7 @@ namespace PerformanceLog
             await _next(context);
             var logEntry = new LogItem
             {
-                Duration = stopwatch.ElapsedMilliseconds,
+                Duration = stopwatch.Elapsed.TotalMilliseconds,
                 Operation = context.Request.Path,
                 CorrelationId = correlationId
             };
