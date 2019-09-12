@@ -28,7 +28,7 @@ jobs:
     steps:
       - attach_workspace:
           at: ~/schwamster/performance-log-middleware
-      - run: dotnet nuget push package/base/*.nupkg -k $Nuget_Api_Key -s https://api.nuget.org/v3/index.json
+      - run: dotnet nuget push package/*.nupkg -k $Nuget_Api_Key -s https://api.nuget.org/v3/index.json
   
 workflows:
   version: 2
