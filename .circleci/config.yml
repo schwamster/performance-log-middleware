@@ -1,0 +1,48 @@
+version: 2.1
+
+executors:
+  ci-executor:
+    docker:
+      - image: mcr.microsoft.com/dotnet/core/sdk:2.2
+    working_directory: ~/schwamster/performance-log-middleware
+
+jobs:
+  build:
+    executor: ci-executor
+    steps:
+      - checkout
+      - run: dotnet restore
+      - run: cd test/performance-log-middleware.test
+      - run: dotnet test --test-adapter-path:. --logger:"xunit;LogFilePath=./../../testresults/out.xml"
+      - run: cd ../..
+      - run: dotnet pack src/performance-log-middleware/performance-log-middleware.csproj -c release -o ./../../package
+      
+      - persist_to_workspace:
+          root: ~/schwamster/performance-log-middleware
+          paths:
+            - package
+      - store_test_results:
+          path: ./testresults
+  deploy-base:
+    executor: ci-executor
+    steps:
+      - attach_workspace:
+          at: ~/schwamster/performance-log-middleware
+      - run: dotnet nuget push package/base/*.nupkg -k $Nuget_Api_Key -s https://api.nuget.org/v3/index.json
+  
+workflows:
+  version: 2
+  build-and-deploy:
+    jobs:
+      - build:
+          filters:  # required since `deploy-*` has tag filters AND requires `build`
+            tags:
+              only: /.*/
+      - deploy-base:
+          requires:
+            - build
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore: /.*/

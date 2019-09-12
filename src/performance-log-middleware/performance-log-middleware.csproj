@@ -1,19 +1,18 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <Version>1.3.0</Version>
-    <TargetFramework>netstandard1.6</TargetFramework>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <AssemblyName>performance-log-middleware</AssemblyName>
     <PackageId>performance-log-middleware</PackageId>
     <PackageProjectUrl>https://github.com/schwamster/performance-log-middleware</PackageProjectUrl>
     <PackageLicenseUrl>https://github.com/schwamster/performance-log-middleware/blob/master/LICENSE.md</PackageLicenseUrl>
-    <NetStandardImplicitPackageVersion>1.6.1</NetStandardImplicitPackageVersion>
-    <PackageTargetFallback>$(PackageTargetFallback);dnxcore50</PackageTargetFallback>
+    <LangVersion>7.3</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="1.1.1" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="1.1.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="2.2.0" />
   </ItemGroup>
 
 </Project>
