@@ -12,11 +12,12 @@ namespace PerformanceLog
         private readonly RequestDelegate _next;
         private readonly ILogger _logger;
         private readonly PerformanceLogOptions _options;
+        private readonly ILoggerFactory _loggerFactory;
 
         public PerformanceLogMiddleware(RequestDelegate next, ILoggerFactory loggerFactory, PerformanceLogOptions options)
         {
             _next = next;
-            _logger = loggerFactory.CreateLogger("performance");
+            _loggerFactory = loggerFactory;
             _options = options;
         }
 
@@ -33,28 +34,29 @@ namespace PerformanceLog
                 CorrelationId = correlationId
             };
 
+            var logger = _loggerFactory.CreateLogger("performance");
             switch (_options.LogLevel)
             {
                 case LogLevel.Information:
-                    _logger.LogInformation(_options.Format, logEntry.Operation, logEntry.Duration, logEntry.CorrelationId);
+                    logger.LogInformation(_options.Format, logEntry.Operation, logEntry.Duration, logEntry.CorrelationId);
                     break;
                 case LogLevel.Debug:
-                    _logger.LogDebug(_options.Format, logEntry.Operation, logEntry.Duration, logEntry.CorrelationId);
+                    logger.LogDebug(_options.Format, logEntry.Operation, logEntry.Duration, logEntry.CorrelationId);
                     break;
                 case LogLevel.Warning:
-                    _logger.LogWarning(_options.Format, logEntry.Operation, logEntry.Duration, logEntry.CorrelationId);
+                    logger.LogWarning(_options.Format, logEntry.Operation, logEntry.Duration, logEntry.CorrelationId);
                     break;
                 case LogLevel.Critical:
-                    _logger.LogCritical(_options.Format, logEntry.Operation, logEntry.Duration, logEntry.CorrelationId);
+                    logger.LogCritical(_options.Format, logEntry.Operation, logEntry.Duration, logEntry.CorrelationId);
                     break;
                 case LogLevel.Error:
-                    _logger.LogError(_options.Format, logEntry.Operation, logEntry.Duration, logEntry.CorrelationId);
+                    logger.LogError(_options.Format, logEntry.Operation, logEntry.Duration, logEntry.CorrelationId);
                     break;
                 case LogLevel.Trace:
-                    _logger.LogTrace(_options.Format, logEntry.Operation, logEntry.Duration, logEntry.CorrelationId);
+                    logger.LogTrace(_options.Format, logEntry.Operation, logEntry.Duration, logEntry.CorrelationId);
                     break;
                  case LogLevel.None:
-                    _logger.LogInformation(_options.Format, logEntry.Operation, logEntry.Duration, logEntry.CorrelationId);
+                     logger.LogInformation(_options.Format, logEntry.Operation, logEntry.Duration, logEntry.CorrelationId);
                     break;
             }
 
