@@ -26,6 +26,12 @@ namespace PerformanceLog
             var correlationId = context.TraceIdentifier;
 
             var stopwatch = Stopwatch.StartNew();
+            context.Response.OnStarting(() =>
+            {
+                context.Response.Headers["X-Request-Duration"] = stopwatch.Elapsed.TotalMilliseconds.ToString();
+                return Task.CompletedTask;
+            });
+
             await _next(context);
             var logEntry = new LogItem
             {
@@ -33,8 +39,6 @@ namespace PerformanceLog
                 Operation = context.Request.Path,
                 CorrelationId = correlationId
             };
-
-            context.Response.Headers.Add("X-Request-Duration", logEntry.Duration.ToString());
 
             var logger = _loggerFactory.CreateLogger("performance");
             switch (_options.LogLevel)
