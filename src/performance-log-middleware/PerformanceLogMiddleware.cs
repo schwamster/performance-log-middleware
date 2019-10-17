@@ -34,6 +34,8 @@ namespace PerformanceLog
                 CorrelationId = correlationId
             };
 
+            context.Response.Headers.Add("X-Request-Duration", logEntry.Duration.ToString());
+
             var logger = _loggerFactory.CreateLogger("performance");
             switch (_options.LogLevel)
             {
@@ -55,8 +57,8 @@ namespace PerformanceLog
                 case LogLevel.Trace:
                     logger.LogTrace(_options.Format, logEntry.Operation, logEntry.Duration, logEntry.CorrelationId);
                     break;
-                 case LogLevel.None:
-                     logger.LogInformation(_options.Format, logEntry.Operation, logEntry.Duration, logEntry.CorrelationId);
+                case LogLevel.None:
+                    logger.LogInformation(_options.Format, logEntry.Operation, logEntry.Duration, logEntry.CorrelationId);
                     break;
             }
 
